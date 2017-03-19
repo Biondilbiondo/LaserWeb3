@@ -231,7 +231,7 @@ Rasterizer.prototype.rasterRow = function(x) {
     var lastFeed = -1;
 
     // Get a row of pixels to work with
-    var ImgData = this.raster.getImageData(x, 0, this.raster.width, 1);
+    var ImgData = this.raster.getImageData(x, 0, this.raster.height, 1);
     var pixels = ImgData.data;
 
     // Run the row:
@@ -242,7 +242,7 @@ Rasterizer.prototype.rasterRow = function(x) {
             y = px;
             posy = y;
         } else { // Backward
-            y = this.raster.width - px - 1;
+            y = this.raster.height - px - 1;
             posy = y + 1;
         }
 
