@@ -371,7 +371,7 @@ Rasterizer.prototype.onRasterLoaded = function() {
         // console.log('After Resize Raster: ', this.raster)
 
 
-    this.currentPosy = 0;
+    this.currentPosx = 0;
     this.rasterIntervalTimer = window.setInterval(this.rasterInterval.bind(this), 10);
 };
 
