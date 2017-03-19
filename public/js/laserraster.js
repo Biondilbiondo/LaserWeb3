@@ -195,7 +195,7 @@ Rasterizer.prototype.init = function(object) {
 };
 
 
-Rasterizer.prototype.rasterRow = function(y) {
+Rasterizer.prototype.rasterRow = function(x) {
 
   // // spotSize1 = size in mm that each physical pixel needs to fill
   // // beamSize1 = size of the laser beam
@@ -210,20 +210,20 @@ Rasterizer.prototype.rasterRow = function(y) {
     // console.log('[Rasterizer] rasterRow', y);
 
     // Calculate where to move to to start the first and next rows - G0 Yxx move between lines
-    var posy = y;
+    var posx = x;
     // posy = (posy * this.config.spotSize1) - parseFloat(this.config.yOffset);
     if (this.config.imagePos == "TopLeft") {
     //   posy = (posy * this.config.spotSize1) - parseFloat(this.config.yOffset) + ((laserymax / 2) + this.config.imgheight);
-      posy = (posy * this.config.beamSize1) - parseFloat(this.config.yOffset) - parseFloat(laserymax) + parseFloat(this.config.physicalHeight);
+      posx = (posx * this.config.beamSize1) - parseFloat(this.config.xOffset) - parseFloat(laserxmax) + parseFloat(this.config.physicalWidth);
     } else {
-      posy = (posy * this.config.beamSize1) - parseFloat(this.config.yOffset);
+      posx = (posx * this.config.beamSize1) - parseFloat(this.config.xOffset);
     }
-    posy = posy.toFixed(3);
+    posx = posx.toFixed(3);
 
     // Offset Y since Gcode runs from bottom left and paper.js runs from top left
-    var gcodey = (this.config.imgheight * this.config.spotSize1) - posy;
-    gcodey = gcodey.toFixed(3);
-    this.result += 'G0 Y{0}\n'.format(gcodey);
+    var gcodex = (this.config.imgwidth * this.config.spotSize1) - posx;
+    gcodex = gcodex.toFixed(3);
+    this.result += 'G0 X{0}\n'.format(gcodex);
 
     // Clear grayscale values on each line change
     var lastGrey = -1;
@@ -231,30 +231,30 @@ Rasterizer.prototype.rasterRow = function(y) {
     var lastFeed = -1;
 
     // Get a row of pixels to work with
-    var ImgData = this.raster.getImageData(0, y, this.raster.width, 1);
+    var ImgData = this.raster.getImageData(x, 0, this.raster.width, 1);
     var pixels = ImgData.data;
 
     // Run the row:
-    for (var px = 0; px <= this.raster.width; px++) {
-        var x;
-        var posx;
+    for (var px = 0; px <= this.raster.height; px++) {
+        var y;
+        var posy;
         if (this.dir > 0) { // Forward
-            x = px;
-            posx = x;
+            y = px;
+            posy = y;
         } else { // Backward
-            x = this.raster.width - px - 1;
-            posx = x + 1;
+            y = this.raster.width - px - 1;
+            posy = y + 1;
         }
 
         // Convert Pixel Position to millimeter position
-        posx = (posx * this.config.beamSize1 + parseFloat(this.config.xOffset));
-        posx = posx.toFixed(3);
+        posy = (posy * this.config.beamSize1 + parseFloat(this.config.yOffset));
+        posy = posy.toFixed(3);
         // Keep some stats of how many pixels we've processed
         this.megaPixel++;
 
         // The Luma grayscale of the pixel
-      	var alpha = pixels[x*4+3]/255.0;                                                   // 0-1.0
-        var lumaGray = (pixels[x*4]*0.3 + pixels[x*4+1]*0.59 + pixels[x*4+2]*0.11)/255.0;  // 0-1.0
+      	var alpha = pixels[y*4+3]/255.0;                                                   // 0-1.0
+        var lumaGray = (pixels[y*4]*0.3 + pixels[y*4+1]*0.59 + pixels[y*4+2]*0.11)/255.0;  // 0-1.0
        	lumaGray = alpha * lumaGray + (1-alpha)*1.0;
       	this.grayLevel = lumaGray.toFixed(3);
       	this.graLevel = lumaGray.toFixed(1);
@@ -269,7 +269,7 @@ Rasterizer.prototype.rasterRow = function(y) {
         //if (px == 0) { this.lastPosx = posx; }
 
         //if we are on the last dot, force a chance for the last pixel while avoiding forcing a move with the laser off
-        if (px == this.raster.width) {
+        if (px == this.raster.height) {
             intensity = -1;
         }
 
@@ -289,11 +289,11 @@ Rasterizer.prototype.rasterRow = function(y) {
               }
               if (lastFeed != speed || IsG1FSet != true) {
                 // console.log("DIFF " + lastFeed + " " + speed)
-                this.result += 'G1 X{0} S{2} F{3}\n'.format(posx, gcodey, lastIntensity, speed);
+                this.result += 'G1 Y{0} S{2} F{3}\n'.format(posy, gcodex, lastIntensity, speed);
                 IsG1FSet = true;
               } else {
                 // console.log("SAME " + lastFeed + " " + speed)
-                this.result += 'G1 X{0} S{2}\n'.format(posx, gcodey, lastIntensity);
+                this.result += 'G1 Y{0} S{2}\n'.format(posy, gcodex, lastIntensity);
               }
               // if (laseroff) {
               //     this.result += laseroff
@@ -308,7 +308,7 @@ Rasterizer.prototype.rasterRow = function(y) {
                   }
                   isLaserOn = false;
                 }
-                this.result += 'G0 X{0} S0\n'.format(posx, gcodey);
+                this.result += 'G0 Y{0} S0\n'.format(posy, gcodex);
 
               }
             }
@@ -336,12 +336,12 @@ Rasterizer.prototype.rasterRow = function(y) {
 
 
 Rasterizer.prototype.rasterInterval = function() {
-    if (this.currentPosy < this.raster.height) {
+    if (this.currentPosx < this.raster.width ) {
 
-        this.rasterRow(this.currentPosy);
+        this.rasterRow(this.currentPosx);
 
-        this.currentPosy++;
-        var progress = Math.round((this.currentPosy / this.raster.height) * 100.0);
+        this.currentPosx++;
+        var progress = Math.round((this.currentPosx / this.raster.width) * 100.0);
         $('#rasterProgressPerc').html(progress + "%");
         NProgress.set(progress / 100);
         printLog('[Rasterizer] ' + progress + '% done', msgcolor, "raster");
