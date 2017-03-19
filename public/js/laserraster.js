@@ -66,7 +66,7 @@ function Rasterizer(config) {
     this.intensity = '';
     this.moveCount = 0; // Keep count of Gcode lines so we can optimise, lower = better
     this.skip = 0;
-    this.dir = 1;
+    this.dir = -1;
     this.megaPixel = 0;
     this.x = 0;
     this.grayLevel = 0;
@@ -231,9 +231,9 @@ Rasterizer.prototype.rasterRow = function(x) {
     var lastFeed = -1;
 
     // Get a row of pixels to work with
-    var ImgData = this.raster.getImageData(x, 0, this.raster.height, 1);
+    var ImgData = this.raster.getImageData(this.raster.width-x, 0, 1, this.raster.height);
     var pixels = ImgData.data;
-
+    pixels.reverse();
     // Run the row:
     for (var px = 0; px <= this.raster.height; px++) {
         var y;
